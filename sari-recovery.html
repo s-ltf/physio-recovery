@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Recovery · Sari</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#EEF1F0;
+    --surface:#FFFFFF;
+    --ink:#16292E;
+    --muted:#5C6B6E;
+    --faint:#8A9799;
+    --teal:#1F7A72;
+    --hold:#E0823A;     /* effort */
+    --rest:#3E86A8;     /* recovery */
+    --ready:#6B7B7E;
+    --done:#4E9A6A;
+    --line:#DCE2E1;
+    --shadow:0 1px 2px rgba(22,41,46,.04), 0 8px 24px rgba(22,41,46,.06);
+    --display:'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+    --body:'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--body);
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:20px 18px 40px;}
+
+  /* ---------- Header ---------- */
+  header.app{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:22px;}
+  .brand .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal);font-weight:700;}
+  .brand h1{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.05;margin:2px 0 0;letter-spacing:-.01em;}
+  .brand .sub{font-size:13px;color:var(--muted);margin-top:3px;}
+  .head-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+  .streak{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--ink);color:#fff;border-radius:14px;padding:8px 12px;min-width:60px;}
+  .streak .n{font-family:var(--display);font-weight:800;font-size:22px;line-height:1;}
+  .streak .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A7B7B9;margin-top:3px;}
+  .icon-btn{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:42px;height:42px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:18px;}
+  .icon-btn:active{transform:scale(.94);}
+
+  /* ---------- Progress ---------- */
+  .today-bar{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .today-bar .row{display:flex;align-items:baseline;justify-content:space-between;}
+  .today-bar .date{font-weight:600;font-size:14px;}
+  .today-bar .count{font-size:13px;color:var(--muted);}
+  .today-bar .count b{color:var(--teal);font-weight:700;}
+  .track{height:8px;border-radius:99px;background:#E3E8E7;margin-top:11px;overflow:hidden;}
+  .track .fill{height:100%;background:linear-gradient(90deg,var(--teal),#39A89E);border-radius:99px;width:0;transition:width .4s ease;}
+  .all-done{display:flex;align-items:center;gap:7px;color:var(--done);font-weight:600;font-size:13px;margin-top:10px;}
+
+  /* ---------- Section label ---------- */
+  .sec-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:24px 4px 12px;}
+
+  /* ---------- Exercise card ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;}
+  .card.is-done{border-color:#CBE3D3;background:#F6FBF7;}
+  .num{flex-shrink:0;width:34px;height:34px;border-radius:11px;background:#EAF3F2;color:var(--teal);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;}
+  .card.is-done .num{background:var(--done);color:#fff;}
+  .card .body{flex:1;min-width:0;}
+  .card h3{font-size:16px;font-weight:700;margin:1px 0 0;letter-spacing:-.01em;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 0;}
+  .chip{font-size:11.5px;font-weight:600;color:var(--ink);background:#EFF2F1;border-radius:8px;padding:4px 8px;letter-spacing:.01em;}
+  .chip.hot{background:#FBEEE2;color:#B5601F;}
+  .note{font-size:12.5px;color:var(--muted);margin-top:9px;}
+  .card .act{margin-top:13px;display:flex;align-items:center;gap:10px;}
+  .btn{font-family:var(--body);font-weight:700;font-size:14px;border:none;border-radius:12px;padding:11px 18px;cursor:pointer;letter-spacing:.01em;}
+  .btn.primary{background:var(--teal);color:#fff;}
+  .btn.primary:active{transform:scale(.97);}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 14px;}
+  .done-tag{display:inline-flex;align-items:center;gap:6px;color:var(--done);font-weight:700;font-size:13px;}
+  .redo{background:none;border:none;color:var(--faint);font-size:12.5px;text-decoration:underline;cursor:pointer;padding:0;}
+
+  /* ---------- Guideline cards ---------- */
+  .guide{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;box-shadow:var(--shadow);margin-bottom:12px;}
+  .guide-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .guide-head h3{font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:9px;}
+  .gicon{font-size:17px;}
+  .guide ul{margin:11px 0 0;padding:0 0 0 2px;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .guide li{font-size:13px;color:var(--muted);display:flex;gap:9px;align-items:flex-start;}
+  .guide li::before{content:"";width:5px;height:5px;border-radius:99px;background:var(--teal);margin-top:8px;flex-shrink:0;}
+  .cue{font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink);margin-top:6px;line-height:1.3;}
+  .cue .up{color:var(--rest);}
+  .cue .down{color:var(--hold);}
+  .cue-explain{font-size:12.5px;color:var(--muted);margin-top:9px;}
+  .guide.info{background:#F6F8F8;border-style:dashed;}
+  .tip-tag{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--faint);background:#E7ECEB;border-radius:6px;padding:3px 7px;vertical-align:middle;margin-left:2px;}
+  .check{appearance:none;-webkit-appearance:none;width:26px;height:26px;border:2px solid var(--line);border-radius:8px;cursor:pointer;flex-shrink:0;position:relative;background:#fff;}
+  .check:checked{background:var(--done);border-color:var(--done);}
+  .check:checked::after{content:"✓";color:#fff;font-size:16px;font-weight:800;position:absolute;inset:0;display:grid;place-items:center;}
+
+  /* ---------- History ---------- */
+  .history{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);}
+  .hist-days{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+  .day{flex-shrink:0;width:42px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .day .dow{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .ring{width:34px;height:34px;border-radius:99px;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--faint);}
+  .ring.full{background:var(--done);border-color:var(--done);color:#fff;}
+  .ring.part{border-color:var(--teal);color:var(--teal);}
+  .ring.today{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--teal);}
+  .hist-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--muted);}
+  .reset{background:none;border:none;color:var(--faint);text-decoration:underline;font-size:12px;cursor:pointer;}
+
+  .data-note{font-size:12.5px;color:var(--muted);margin:0 0 13px;}
+  .data-btns{display:flex;flex-wrap:wrap;gap:9px;}
+  .data-btn{flex:1;min-width:140px;background:#EFF2F1;border:1px solid var(--line);border-radius:12px;padding:12px 10px;font-family:var(--body);font-weight:700;font-size:13.5px;color:var(--ink);cursor:pointer;}
+  .data-btn:active{transform:scale(.97);}
+  .data-btn.drive{background:#EAF3F2;color:var(--teal);border-color:#CFE6E3;}
+  .data-btn:disabled{opacity:.5;cursor:default;}
+  .cloud-input{width:100%;font-family:var(--body);font-size:13.5px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#F9FAFA;color:var(--ink);}
+  .cloud-input:focus{outline:none;border-color:var(--teal);}
+  .data-msg{font-size:12.5px;margin-top:11px;min-height:1px;}
+  .data-msg.ok{color:var(--done);font-weight:600;}
+  .data-msg.err{color:#C0563B;font-weight:600;}
+
+  /* ---------- Player overlay ---------- */
+  .overlay{position:fixed;inset:0;background:var(--ink);color:#fff;z-index:50;display:none;flex-direction:column;padding:max(22px,env(safe-area-inset-top)) 22px max(26px,env(safe-area-inset-bottom));}
+  .overlay.open{display:flex;animation:slideUp .28s ease;}
+  @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .ov-top{display:flex;align-items:flex-start;justify-content:space-between;}
+  .ov-top .t-name{font-family:var(--display);font-weight:700;font-size:19px;max-width:78%;line-height:1.15;}
+  .ov-top .t-sub{font-size:12.5px;color:#9FB0B2;margin-top:3px;}
+  .x{background:rgba(255,255,255,.1);border:none;color:#fff;width:38px;height:38px;border-radius:11px;font-size:18px;cursor:pointer;flex-shrink:0;}
+
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;}
+  .phase{font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;}
+
+  /* ring timer */
+  .ring-wrap{position:relative;width:248px;height:248px;}
+  .ring-wrap svg{transform:rotate(-90deg);width:100%;height:100%;}
+  .ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:12;}
+  .ring-fg{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke .3s ease;}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .big-num{font-family:var(--display);font-weight:800;font-size:78px;line-height:1;font-variant-numeric:tabular-nums;}
+  .big-sub{font-size:13px;color:#9FB0B2;margin-top:6px;letter-spacing:.04em;}
+
+  .pips{display:flex;gap:10px;}
+  .pip{width:13px;height:13px;border-radius:99px;background:rgba(255,255,255,.16);transition:background .3s,transform .3s;}
+  .pip.active{transform:scale(1.35);}
+  .pip.done{background:var(--done);}
+
+  /* rep counter */
+  .rep-tap{width:248px;height:248px;border-radius:99px;border:3px solid rgba(255,255,255,.16);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;background:rgba(255,255,255,.04);transition:transform .08s,background .2s;}
+  .rep-tap:active{transform:scale(.96);background:rgba(255,255,255,.09);}
+  .rep-tap .rn{font-family:var(--display);font-weight:800;font-size:90px;line-height:1;}
+  .rep-tap .rl{font-size:13px;color:#9FB0B2;letter-spacing:.06em;}
+  .tap-hint{font-size:12.5px;color:#7E9092;margin-top:-6px;}
+
+  .ov-controls{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:6px;}
+  .ctrl{background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:14px;padding:14px 0;font-weight:700;font-size:15px;cursor:pointer;flex:1;max-width:150px;font-family:var(--body);}
+  .ctrl:active{transform:scale(.97);}
+  .ctrl.go{background:var(--teal);}
+  .ctrl.sm{flex:0 0 auto;padding:14px 18px;font-size:13px;color:#B8C6C7;}
+  .ctrl.minus{flex:0 0 auto;width:56px;font-size:24px;}
+
+  .ready-msg{text-align:center;}
+  .ready-msg .big-num{font-size:120px;}
+
+  .complete-screen{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .complete-screen .ck{width:88px;height:88px;border-radius:99px;background:var(--done);display:grid;place-items:center;font-size:46px;}
+  .complete-screen h2{font-family:var(--display);font-size:26px;margin:0;font-weight:800;}
+  .complete-screen p{color:#9FB0B2;margin:0;font-size:14px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important;}
+  }
+  :focus-visible{outline:3px solid var(--teal);outline-offset:2px;}
+  .loading{text-align:center;color:var(--muted);padding:60px 0;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">Loading your plan…</div>
+</div>
+
+<!-- Player overlay -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Exercise timer">
+  <div class="ov-top">
+    <div>
+      <div class="t-name" id="ovName">Exercise</div>
+      <div class="t-sub" id="ovSub"></div>
+    </div>
+    <button class="x" id="ovClose" aria-label="Close">✕</button>
+  </div>
+  <div class="stage" id="ovStage"></div>
+</div>
+
+<script>
+/* ============ Plan data (transcribed from the notes) ============ */
+const EXERCISES = [
+  {
+    id:'1a', label:'1a',
+    name:'Seated Calf Raises',
+    type:'reps', reps:10, sets:3, restBetweenSets:45,
+    chips:['10 reps','3 sets'],
+    note:'Sit tall, push through the balls of the feet, lower with control.'
+  },
+  {
+    id:'1b', label:'1b',
+    name:'Seated Calf Raises — Isometric Holds',
+    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+    chips:['20s hold','20s rest','×5','hold at top'],
+    note:'Raise up, then hold at the top of the range for the full count.'
+  },
+  {
+    id:'2', label:'2',
+    name:'Long-Sitting Plantar Flexion (ball push)',
+    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+    chips:['20s hold','20s rest','×5'],
+    note:'Legs out straight. Press the ball of the foot steadily into a ball.'
+  },
+];
+const GUIDELINES = [
+  {
+    id:'wbat', icon:'🦶', name:'Weight-bearing (WBAT)',
+    items:[
+      'Use both crutches.',
+      'Begin at about 10% weight and increase gradually from there.',
+      'Wean off the boot inside the house.'
+    ]
+  },
+  {
+    id:'stairs', icon:'🪜', name:'Stairs', cue:true, info:true
+  }
+];
+const EX_IDS = EXERCISES.map(e=>e.id);
+
+/* ============ Storage ============ */
+const HKEY='sari-rehab-history-v1';
+const SKEY='sari-rehab-sound-v1';
+const CKEY='sari-rehab-cloud-url-v1';
+let history = {};
+let soundOn = true;
+let cloudUrl = '';
+
+// Works inside Claude's artifact viewer (window.storage) AND as a
+// standalone deployed page (falls back to localStorage automatically).
+const hasArtifactStorage = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
+const store = {
+  async get(key){
+    if(hasArtifactStorage){ return await window.storage.get(key); }
+    const v=localStorage.getItem(key);
+    return v==null ? null : { key, value:v };
+  },
+  async set(key, value){
+    if(hasArtifactStorage){ return await window.storage.set(key, value); }
+    localStorage.setItem(key, value);
+    return { key, value };
+  }
+};
+
+async function loadAll(){
+  try{ const r=await store.get(HKEY); if(r&&r.value) history=JSON.parse(r.value)||{}; }catch(e){ history={}; }
+  try{ const s=await store.get(SKEY); if(s&&s.value!=null) soundOn = s.value!=='false'; }catch(e){}
+  try{ const c=await store.get(CKEY); if(c&&c.value) cloudUrl = c.value; }catch(e){}
+}
+let saveTimer=null;
+function saveHistory(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    try{ await store.set(HKEY, JSON.stringify(history)); }
+    catch(e){ console.error('Save failed', e); }
+  },150);
+}
+async function saveSound(){ try{ await store.set(SKEY, String(soundOn)); }catch(e){} }
+async function saveCloudUrl(){ try{ await store.set(CKEY, cloudUrl); }catch(e){} }
+
+function todayKey(d=new Date()){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dayRecord(key){
+  if(!history[key]) history[key]={};
+  return history[key];
+}
+
+/* ============ Audio cues ============ */
+let actx=null;
+function ensureAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); }
+function beep(freq=880,dur=0.16,vol=0.22){
+  if(!soundOn||!actx) return;
+  try{
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    o.connect(g); g.connect(actx.destination);
+    const t=actx.currentTime;
+    g.gain.setValueAtTime(vol,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur);
+  }catch(e){}
+}
+function beepHold(){ beep(660,.18); }
+function beepRest(){ beep(440,.18); }
+function beepCount(){ beep(880,.07,.15); }
+function beepDone(){ beep(523,.13); setTimeout(()=>beep(659,.13),140); setTimeout(()=>beep(784,.22),280); }
+
+/* ============ Streak + completion ============ */
+function isDayComplete(key){
+  const r=history[key]; if(!r) return false;
+  return EX_IDS.every(id=>r[id]);
+}
+function dayPartial(key){
+  const r=history[key]; if(!r) return false;
+  return EX_IDS.some(id=>r[id]);
+}
+function computeStreak(){
+  let streak=0;
+  const d=new Date();
+  // if today not complete, streak counts up to yesterday
+  if(!isDayComplete(todayKey(d))) d.setDate(d.getDate()-1);
+  while(isDayComplete(todayKey(d))){ streak++; d.setDate(d.getDate()-1); }
+  return streak;
+}
+
+/* ============ Render ============ */
+const app=document.getElementById('app');
+function render(){
+  const tk=todayKey();
+  const rec=dayRecord(tk);
+  const exDone=EX_IDS.filter(id=>rec[id]).length;
+  const pct=Math.round(exDone/EX_IDS.length*100);
+  const streak=computeStreak();
+  const allDone=exDone===EX_IDS.length;
+  const niceDate=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+
+  let html=`
+  <header class="app">
+    <div class="brand">
+      <div class="kicker">Recovery Plan</div>
+      <h1>Sari</h1>
+      <div class="sub">Ankle &amp; calf rehab</div>
+    </div>
+    <div class="head-actions">
+      <button class="icon-btn" id="soundBtn" aria-label="Toggle sound">${soundOn?'🔔':'🔕'}</button>
+      <div class="streak"><span class="n">${streak}</span><span class="l">day${streak===1?'':'s'}</span></div>
+    </div>
+  </header>
+
+  <div class="today-bar">
+    <div class="row">
+      <span class="date">${niceDate}</span>
+      <span class="count"><b>${exDone}</b> / ${EX_IDS.length} exercises</span>
+    </div>
+    <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+    ${allDone?`<div class="all-done">✓ Session complete — nice work today.</div>`:''}
+  </div>
+
+  <div class="sec-label">Today's exercises</div>`;
+
+  EXERCISES.forEach(ex=>{
+    const done=!!rec[ex.id];
+    const chips=ex.chips.map((c,i)=>`<span class="chip${(ex.type==='iso'&&c.includes('hold'))?' hot':''}">${c}</span>`).join('');
+    html+=`
+    <div class="card ${done?'is-done':''}">
+      <div class="num">${ex.label}</div>
+      <div class="body">
+        <h3>${ex.name}</h3>
+        <div class="chips">${chips}</div>
+        <div class="note">${ex.note}</div>
+        <div class="act">
+          ${done
+            ? `<span class="done-tag">✓ Done</span><button class="redo" data-redo="${ex.id}">Repeat</button>`
+            : `<button class="btn primary" data-start="${ex.id}">${ex.type==='reps'?'Start set':'Start timer'}</button>`}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html+=`<div class="sec-label">Daily guidelines</div>`;
+  GUIDELINES.forEach(g=>{
+    const checked=!!rec[g.id];
+    html+=`
+    <div class="guide${g.info?' info':''}">
+      <div class="guide-head">
+        <h3><span class="gicon">${g.icon}</span>${g.name}${g.info?` <span class="tip-tag">reminder</span>`:''}</h3>
+        ${g.info?'':`<input type="checkbox" class="check" data-guide="${g.id}" ${checked?'checked':''} aria-label="Mark ${g.name} practiced today">`}
+      </div>`;
+    if(g.cue){
+      html+=`<div class="cue">Good foot up to <span class="up">heaven</span>,<br>bad foot down to <span class="down">hell</span>.</div>
+      <div class="cue-explain">Step <b>up</b> leading with your good foot; step <b>down</b> leading with the injured foot.</div>`;
+    }else{
+      html+=`<ul>${g.items.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+    }
+    html+=`</div>`;
+  });
+
+  // History strip — last 14 days
+  html+=`<div class="sec-label">Last 14 days</div><div class="history"><div class="hist-days">`;
+  const days=[];
+  for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d); }
+  days.forEach(d=>{
+    const k=todayKey(d);
+    const full=isDayComplete(k), part=!full&&dayPartial(k);
+    const isToday=k===tk;
+    const dow=d.toLocaleDateString(undefined,{weekday:'short'}).slice(0,2);
+    const cls=full?'full':(part?'part':'');
+    html+=`<div class="day"><span class="dow">${dow}</span><div class="ring ${cls} ${isToday?'today':''}">${full?'✓':d.getDate()}</div></div>`;
+  });
+  const completedCount=Object.keys(history).filter(isDayComplete).length;
+  html+=`</div><div class="hist-foot"><span>${completedCount} full session${completedCount===1?'':'s'} logged</span><button class="reset" id="resetBtn">Reset today</button></div></div>`;
+
+  // Data / backup
+  html+=`
+  <div class="sec-label">Your data</div>
+  <div class="history">
+    <p class="data-note">Save a backup file you can keep anywhere, or restore one on a new device. Your log lives only in this browser otherwise.</p>
+    <div class="data-btns">
+      <button class="data-btn" id="expCsv">⬇ Export CSV</button>
+      <button class="data-btn" id="expJson">⬇ Export backup</button>
+      <button class="data-btn" id="impBtn">⬆ Import backup</button>
+    </div>
+    <input type="file" id="impFile" accept=".json,application/json" style="display:none">
+    <div class="data-msg" id="dataMsg"></div>
+  </div>
+
+  <div class="history" style="margin-top:12px;">
+    <p class="data-note">Cloud sync — connect this to the GitHub Action relay so any device can pull the same log. <button class="reset" id="toggleCloudSetup" style="margin-left:2px;">${cloudUrl?'change':'set up'}</button></p>
+    <div id="cloudSetup" style="${cloudUrl?'display:none;':''}margin-bottom:10px;">
+      <input type="url" id="cloudUrlInput" placeholder="https://your-worker.workers.dev" value="${cloudUrl||''}" class="cloud-input">
+      <button class="data-btn" id="cloudUrlSave" style="margin-top:8px;">Save URL</button>
+    </div>
+    <div class="data-btns">
+      <button class="data-btn drive" id="cloudSave" ${cloudUrl?'':'disabled'}>☁ Save to cloud</button>
+      <button class="data-btn drive" id="cloudLoad" ${cloudUrl?'':'disabled'}>☁ Load from cloud</button>
+    </div>
+    <div class="data-msg" id="cloudMsg"></div>
+  </div>`;
+
+  app.innerHTML=html;
+  bind();
+}
+
+/* ============ Event binding ============ */
+function bind(){
+  document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>{ ensureAudio(); openPlayer(b.dataset.start); });
+  document.querySelectorAll('[data-redo]').forEach(b=>b.onclick=()=>{ ensureAudio(); openPlayer(b.dataset.redo); });
+  document.querySelectorAll('[data-guide]').forEach(c=>c.onchange=()=>{
+    dayRecord(todayKey())[c.dataset.guide]=c.checked; saveHistory(); render();
+  });
+  document.getElementById('soundBtn').onclick=()=>{ soundOn=!soundOn; ensureAudio(); saveSound(); render(); };
+  document.getElementById('resetBtn').onclick=()=>{
+    if(confirm("Clear today's progress?")){ history[todayKey()]={}; saveHistory(); render(); }
+  };
+  const expCsv=document.getElementById('expCsv'); if(expCsv) expCsv.onclick=exportCSV;
+  const expJson=document.getElementById('expJson'); if(expJson) expJson.onclick=exportJSON;
+  const impBtn=document.getElementById('impBtn'), impFile=document.getElementById('impFile');
+  if(impBtn&&impFile){
+    impBtn.onclick=()=>impFile.click();
+    impFile.onchange=()=>{ if(impFile.files&&impFile.files[0]){ importFile(impFile.files[0]); impFile.value=''; } };
+  }
+  const toggleSetup=document.getElementById('toggleCloudSetup'), setupBox=document.getElementById('cloudSetup');
+  if(toggleSetup&&setupBox) toggleSetup.onclick=()=>{
+    setupBox.style.display = setupBox.style.display==='none' ? '' : 'none';
+  };
+  const urlSaveBtn=document.getElementById('cloudUrlSave');
+  if(urlSaveBtn) urlSaveBtn.onclick=()=>{
+    const v=document.getElementById('cloudUrlInput').value.trim();
+    cloudUrl=v; saveCloudUrl(); render();
+    cloudMsg(v?'Worker URL saved.':'Cleared.', 'ok');
+  };
+  const cSave=document.getElementById('cloudSave'); if(cSave) cSave.onclick=cloudSave;
+  const cLoad=document.getElementById('cloudLoad'); if(cLoad) cLoad.onclick=cloudLoad;
+}
+
+function markDone(id){ dayRecord(todayKey())[id]=true; saveHistory(); }
+
+/* ============ Export / Import ============ */
+function dataMsg(text, kind){
+  const el=document.getElementById('dataMsg'); if(!el) return;
+  el.textContent=text; el.className='data-msg '+(kind||'');
+  if(text) setTimeout(()=>{ if(el.textContent===text){ el.textContent=''; el.className='data-msg'; } }, 5000);
+}
+function downloadBlob(content, filename, mime){
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function stamp(){ return todayKey(); }
+
+function exportJSON(){
+  const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history };
+  downloadBlob(JSON.stringify(payload,null,2), `sari-recovery-backup-${stamp()}.json`, 'application/json');
+  dataMsg('Backup downloaded — keep it somewhere safe.', 'ok');
+}
+function exportCSV(){
+  const cols=['1a','1b','2','wbat','stairs'];
+  const headers=['date','Calf raises','Calf raises (iso)','Plantar flexion','WBAT','Stairs','session complete'];
+  const rows=[headers.join(',')];
+  Object.keys(history).sort().forEach(date=>{
+    const r=history[date]||{};
+    const cells=cols.map(c=>r[c]?'yes':'');
+    const full=EX_IDS.every(id=>r[id])?'yes':'';
+    rows.push([date, ...cells, full].join(','));
+  });
+  downloadBlob(rows.join('\n'), `sari-recovery-log-${stamp()}.csv`, 'text/csv');
+  dataMsg('CSV downloaded — opens in Excel.', 'ok');
+}
+function mergeFromText(text){
+  // Accept either a full backup ({app,history}) or a bare history object.
+  let parsed=JSON.parse(text);
+  const incoming = parsed.history && typeof parsed.history==='object' ? parsed.history
+                 : (typeof parsed==='object' && !parsed.app ? parsed : null);
+  if(!incoming) throw new Error('format');
+  // Merge: a day counts as done if EITHER copy marked it done.
+  Object.keys(incoming).forEach(date=>{
+    const src=incoming[date]||{};
+    if(!history[date]) history[date]={};
+    Object.keys(src).forEach(k=>{ if(src[k]) history[date][k]=true; });
+  });
+  saveHistory(); render();
+  return Object.keys(incoming).length;
+}
+function importFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{ const n=mergeFromText(reader.result); dataMsg(`Restored. ${n} day(s) merged in.`, 'ok'); }
+    catch(e){ dataMsg("Couldn't read that file — use a backup exported from this app.", 'err'); }
+  };
+  reader.onerror=()=>dataMsg("Couldn't read that file.", 'err');
+  reader.readAsText(file);
+}
+
+/* ---- Cloud sync via the GitHub Action relay (Cloudflare Worker) ---- */
+function cloudMsg(text, kind){
+  const el=document.getElementById('cloudMsg'); if(!el) return;
+  el.textContent=text; el.className='data-msg '+(kind||'');
+  if(text) setTimeout(()=>{ if(el.textContent===text){ el.textContent=''; el.className='data-msg'; } }, 6000);
+}
+function cleanCloudUrl(u){ return (u||'').trim().replace(/\/+$/,''); }
+
+async function cloudSave(){
+  const btn=document.getElementById('cloudSave'); if(btn) btn.disabled=true;
+  cloudMsg('Sending to the cloud…');
+  try{
+    const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history };
+    const res=await fetch(cleanCloudUrl(cloudUrl)+'/save', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok || data.ok===false) throw new Error(data.error||('HTTP '+res.status));
+    cloudMsg('Saved — the commit lands in your repo within ~30s.', 'ok');
+  }catch(e){
+    cloudMsg('Cloud save failed: '+(e.message||e), 'err');
+  }finally{ if(btn) btn.disabled=false; }
+}
+
+async function cloudLoad(){
+  const btn=document.getElementById('cloudLoad'); if(btn) btn.disabled=true;
+  cloudMsg('Fetching from the cloud…');
+  try{
+    const res=await fetch(cleanCloudUrl(cloudUrl)+'/load');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    const n=mergeFromText(text);
+    cloudMsg(n ? `Restored. ${n} day(s) merged in.` : 'No cloud backup found yet — save one first.', n?'ok':'err');
+  }catch(e){
+    cloudMsg('Cloud load failed: '+(e.message||e), 'err');
+  }finally{ if(btn) btn.disabled=false; }
+}
+
+/* ============ Player ============ */
+const overlay=document.getElementById('overlay');
+const ovStage=document.getElementById('ovStage');
+const ovName=document.getElementById('ovName');
+const ovSub=document.getElementById('ovSub');
+let engine=null;
+
+document.getElementById('ovClose').onclick=closePlayer;
+function closePlayer(){ if(engine){engine.stop();engine=null;} overlay.classList.remove('open'); }
+
+function openPlayer(id){
+  const ex=EXERCISES.find(e=>e.id===id);
+  ovName.textContent=ex.name;
+  overlay.classList.add('open');
+  if(ex.type==='reps') startReps(ex); else startIso(ex);
+}
+
+function completeScreen(ex,subtitle){
+  if(engine){engine.stop?.();}
+  ovStage.innerHTML=`
+    <div class="complete-screen">
+      <div class="ck">✓</div>
+      <h2>Done</h2>
+      <p>${subtitle}</p>
+      <button class="ctrl go" id="finishBtn" style="max-width:220px;flex:0 0 auto;padding:14px 32px;">Back to plan</button>
+    </div>`;
+  beepDone();
+  markDone(ex.id);
+  document.getElementById('finishBtn').onclick=()=>{ closePlayer(); render(); };
+}
+
+/* ---- Isometric hold/rest engine ---- */
+function startIso(ex){
+  let round=0;            // completed holds
+  let phase='ready';      // ready | hold | rest
+  let phaseDur=ex.leadIn;
+  let remaining=ex.leadIn;
+  let raf=null, last=null, paused=false;
+  const R=104, C=2*Math.PI*R;
+
+  ovSub.textContent=`${ex.rounds} rounds · ${ex.hold}s hold / ${ex.rest}s rest`;
+
+  function layout(){
+    ovStage.innerHTML=`
+      <div class="phase" id="phaseLbl"></div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 248 248">
+          <circle class="ring-bg" cx="124" cy="124" r="${R}"></circle>
+          <circle class="ring-fg" id="ringFg" cx="124" cy="124" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="big-num" id="bigNum">0</div>
+          <div class="big-sub" id="bigSub"></div>
+        </div>
+      </div>
+      <div class="pips" id="pips"></div>
+      <div class="ov-controls">
+        <button class="ctrl sm" id="skipBtn">Skip</button>
+        <button class="ctrl go" id="pauseBtn">Pause</button>
+        <button class="ctrl sm" id="stopBtn">Stop</button>
+      </div>`;
+    let ph='';
+    for(let i=0;i<ex.rounds;i++) ph+=`<div class="pip" data-i="${i}"></div>`;
+    document.getElementById('pips').innerHTML=ph;
+    document.getElementById('pauseBtn').onclick=togglePause;
+    document.getElementById('skipBtn').onclick=()=>{ remaining=0; };
+    document.getElementById('stopBtn').onclick=()=>{ closePlayer(); };
+  }
+  layout();
+  const fg=()=>document.getElementById('ringFg');
+  const bigNum=()=>document.getElementById('bigNum');
+  const bigSub=()=>document.getElementById('bigSub');
+  const phaseLbl=()=>document.getElementById('phaseLbl');
+
+  function colorFor(){
+    if(phase==='ready') return getCss('--ready');
+    if(phase==='hold') return getCss('--hold');
+    return getCss('--rest');
+  }
+  function refreshPips(){
+    document.querySelectorAll('.pip').forEach((p,i)=>{
+      p.classList.toggle('done', i<round);
+      p.classList.toggle('active', i===round && phase==='hold');
+    });
+  }
+  function setPhaseUI(){
+    const lbl = phase==='ready'?'Get ready':(phase==='hold'?'Hold':'Rest');
+    phaseLbl().textContent=lbl;
+    phaseLbl().style.color=colorFor();
+    fg().style.stroke=colorFor();
+    bigSub().textContent = phase==='ready'?'starting…':(phase==='hold'?`round ${round+1} of ${ex.rounds}`:'recover');
+    refreshPips();
+  }
+  setPhaseUI();
+
+  function nextPhase(){
+    if(phase==='ready'){ phase='hold'; phaseDur=ex.hold; remaining=ex.hold; beepHold(); }
+    else if(phase==='hold'){
+      round++;
+      if(round>=ex.rounds){ completeScreen(ex, `${ex.rounds} holds complete.`); return; }
+      phase='rest'; phaseDur=ex.rest; remaining=ex.rest; beepRest();
+    }
+    else { phase='hold'; phaseDur=ex.hold; remaining=ex.hold; beepHold(); }
+    setPhaseUI();
+  }
+
+  let lastWhole=-1;
+  function tick(ts){
+    if(paused){ last=ts; raf=requestAnimationFrame(tick); return; }
+    if(last==null) last=ts;
+    const dt=(ts-last)/1000; last=ts;
+    remaining-=dt;
+    if(remaining<=0){ nextPhase(); if(!overlay.classList.contains('open')) return; if(ovStage.querySelector('.complete-screen')) return; last=null; raf=requestAnimationFrame(tick); return; }
+    const whole=Math.ceil(remaining);
+    if(whole!==lastWhole){
+      lastWhole=whole;
+      if(bigNum()) bigNum().textContent=whole;
+      if(phase!=='ready' && whole<=3 && whole>0) beepCount();
+    }
+    const frac=remaining/phaseDur;
+    if(fg()) fg().style.strokeDashoffset = C*(1-frac);
+    raf=requestAnimationFrame(tick);
+  }
+  function togglePause(){
+    paused=!paused;
+    const b=document.getElementById('pauseBtn');
+    if(b){ b.textContent=paused?'Resume':'Pause'; }
+    if(!paused) last=null;
+  }
+  raf=requestAnimationFrame(tick);
+  engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
+}
+
+/* ---- Rep counter engine ---- */
+function startReps(ex){
+  let set=1, reps=0;
+  let resting=false, restRemaining=0, raf=null, last=null;
+
+  ovSub.textContent=`${ex.sets} sets of ${ex.reps} reps`;
+
+  function drawCounter(){
+    ovStage.innerHTML=`
+      <div class="phase" style="color:var(--teal)">Set ${set} of ${ex.sets}</div>
+      <div class="rep-tap" id="repTap" role="button" aria-label="Count rep">
+        <div class="rn" id="rn">${reps}</div>
+        <div class="rl">of ${ex.reps} reps</div>
+      </div>
+      <div class="tap-hint">Tap the circle each time you complete a rep</div>
+      <div class="pips" id="pips"></div>
+      <div class="ov-controls">
+        <button class="ctrl minus" id="minusBtn" aria-label="Undo one rep">−</button>
+        <button class="ctrl go" id="setDone">Set done</button>
+        <button class="ctrl sm" id="stopBtn">Stop</button>
+      </div>`;
+    let ph=''; for(let i=0;i<ex.sets;i++) ph+=`<div class="pip ${i<set-1?'done':''} ${i===set-1?'active':''}" data-i="${i}"></div>`;
+    document.getElementById('pips').innerHTML=ph;
+    document.getElementById('repTap').onclick=()=>{ if(reps<ex.reps){ reps++; beepCount(); } document.getElementById('rn').textContent=reps; if(reps>=ex.reps){ /* auto nothing, let user confirm */ } };
+    document.getElementById('minusBtn').onclick=()=>{ if(reps>0)reps--; document.getElementById('rn').textContent=reps; };
+    document.getElementById('setDone').onclick=finishSet;
+    document.getElementById('stopBtn').onclick=()=>closePlayer();
+  }
+
+  function finishSet(){
+    if(set>=ex.sets){ completeScreen(ex, `${ex.sets} sets of ${ex.reps} done.`); return; }
+    set++; reps=0; startRest();
+  }
+
+  function startRest(){
+    resting=true; restRemaining=ex.restBetweenSets; last=null;
+    const R=104, C=2*Math.PI*R;
+    ovStage.innerHTML=`
+      <div class="phase" style="color:var(--rest)">Rest before set ${set}</div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 248 248">
+          <circle class="ring-bg" cx="124" cy="124" r="${R}"></circle>
+          <circle class="ring-fg" id="ringFg" cx="124" cy="124" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0" style="stroke:var(--rest)"></circle>
+        </svg>
+        <div class="ring-center"><div class="big-num" id="bigNum">${ex.restBetweenSets}</div><div class="big-sub">seconds</div></div>
+      </div>
+      <div class="tap-hint">Optional — catch your breath</div>
+      <div class="ov-controls"><button class="ctrl go" id="skipRest" style="max-width:220px;">Skip rest →</button></div>`;
+    document.getElementById('skipRest').onclick=()=>{ resting=false; if(raf)cancelAnimationFrame(raf); drawCounter(); };
+    let lastWhole=-1;
+    function tick(ts){
+      if(last==null) last=ts;
+      const dt=(ts-last)/1000; last=ts; restRemaining-=dt;
+      if(restRemaining<=0){ resting=false; beepHold(); drawCounter(); return; }
+      const whole=Math.ceil(restRemaining);
+      if(whole!==lastWhole){ lastWhole=whole; const bn=document.getElementById('bigNum'); if(bn)bn.textContent=whole; if(whole<=3)beepCount(); }
+      const fgEl=document.getElementById('ringFg'); if(fgEl) fgEl.style.strokeDashoffset=C*(1-restRemaining/ex.restBetweenSets);
+      raf=requestAnimationFrame(tick);
+    }
+    raf=requestAnimationFrame(tick);
+  }
+
+  drawCounter();
+  engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
+}
+
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ============ Init ============ */
+(async function(){
+  await loadAll();
+  render();
+})();
+</script>
+</body>
+</html>
