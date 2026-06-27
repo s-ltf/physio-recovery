@@ -1,6 +1,6 @@
 {
   "app": "sari-recovery",
-  "exportedAt": "2026-06-26T04:19:54.873Z",
+  "exportedAt": "2026-06-27T05:22:41.709Z",
   "history": {
     "2026-06-23": {
       "1a": true,
@@ -15,6 +15,18 @@
       "wbat": true
     },
     "2026-06-25": {
+      "1a": true,
+      "1b": true,
+      "2": true,
+      "wbat": true
+    },
+    "2026-06-26": {
+      "1a": true,
+      "1b": true,
+      "2": true,
+      "wbat": true
+    },
+    "2026-06-27": {
       "1a": true,
       "1b": true,
       "2": true,
