@@ -105,17 +105,26 @@
   .check:checked{background:var(--done);border-color:var(--done);}
   .check:checked::after{content:"✓";color:#fff;font-size:16px;font-weight:800;position:absolute;inset:0;display:grid;place-items:center;}
 
-  /* ---------- History ---------- */
+  /* ---------- History / Calendar ---------- */
   .history{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);}
-  .hist-days{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
-  .day{flex-shrink:0;width:42px;display:flex;flex-direction:column;align-items:center;gap:6px;}
-  .day .dow{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-  .ring{width:34px;height:34px;border-radius:99px;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--faint);}
-  .ring.full{background:var(--done);border-color:var(--done);color:#fff;}
-  .ring.part{border-color:var(--teal);color:var(--teal);}
-  .ring.today{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--teal);}
   .hist-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--muted);}
   .reset{background:none;border:none;color:var(--faint);text-decoration:underline;font-size:12px;cursor:pointer;}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .cal-month{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.01em;}
+  .cal-nav{background:#EFF2F1;border:none;color:var(--ink);width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;line-height:1;}
+  .cal-nav:disabled{opacity:.35;cursor:default;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .cal-dow-row{margin-bottom:6px;}
+  .cal-dow{text-align:center;font-size:10.5px;font-weight:700;color:var(--faint);letter-spacing:.04em;text-transform:uppercase;}
+  .cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--ink);background:#F3F5F4;}
+  .cal-cell.empty{background:transparent;}
+  .cal-cell.future{color:var(--faint);background:transparent;}
+  .cal-cell.part{background:#EAF3F2;color:var(--teal);box-shadow:inset 0 0 0 1.5px var(--teal);}
+  .cal-cell.full{background:var(--done);color:#fff;}
+  .cal-cell.today{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ink);}
+  .cal-cell.full.today{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--done);}
+  .cal-n{line-height:1;}
 
   .data-note{font-size:12.5px;color:var(--muted);margin:0 0 13px;}
   .data-btns{display:flex;flex-wrap:wrap;gap:9px;}
@@ -300,6 +309,7 @@ const DEFAULT_CLOUD_URL = 'https://rapid-waterfall-d070.iras146-dev.workers.dev'
 let cloudUrl = DEFAULT_CLOUD_URL;
 let cloudKey = '';
 let lastSync = 0; // epoch ms of last successful save or load
+let calendarOffset = 0; // months relative to current month, for calendar nav (view-only, not persisted)
 
 // Works inside Claude's artifact viewer (window.storage) AND as a
 // standalone deployed page (falls back to localStorage automatically).
@@ -464,20 +474,37 @@ function render(){
     html+=`</div>`;
   });
 
-  // History strip — last 14 days
-  html+=`<div class="sec-label">Last 14 days</div><div class="history"><div class="hist-days">`;
-  const days=[];
-  for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d); }
-  days.forEach(d=>{
+  // Calendar — full month grid with prev/next navigation
+  const calBase=new Date(); calBase.setDate(1); calBase.setMonth(calBase.getMonth()+calendarOffset);
+  const calYear=calBase.getFullYear(), calMonth=calBase.getMonth();
+  const monthLabel=calBase.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const firstWeekday=new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth=new Date(calYear, calMonth+1, 0).getDate();
+  const dowLabels=['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  html+=`
+  <div class="sec-label">Calendar</div>
+  <div class="history cal-card">
+    <div class="cal-head">
+      <button class="cal-nav" id="calPrev" aria-label="Previous month">‹</button>
+      <span class="cal-month">${monthLabel}</span>
+      <button class="cal-nav" id="calNext" aria-label="Next month" ${calendarOffset>=0?'disabled':''}>›</button>
+    </div>
+    <div class="cal-grid cal-dow-row">${dowLabels.map(l=>`<span class="cal-dow">${l}</span>`).join('')}</div>
+    <div class="cal-grid">`;
+  for(let i=0;i<firstWeekday;i++) html+=`<span class="cal-cell empty"></span>`;
+  for(let day=1;day<=daysInMonth;day++){
+    const d=new Date(calYear, calMonth, day);
     const k=todayKey(d);
     const full=isDayComplete(k), part=!full&&dayPartial(k);
     const isToday=k===tk;
-    const dow=d.toLocaleDateString(undefined,{weekday:'short'}).slice(0,2);
-    const cls=full?'full':(part?'part':'');
-    html+=`<div class="day"><span class="dow">${dow}</span><div class="ring ${cls} ${isToday?'today':''}">${full?'✓':d.getDate()}</div></div>`;
-  });
+    const isFuture=d>new Date(new Date().setHours(23,59,59,999));
+    const cls=[full?'full':(part?'part':''), isToday?'today':'', isFuture?'future':''].filter(Boolean).join(' ');
+    html+=`<span class="cal-cell ${cls}"><span class="cal-n">${full?'✓':day}</span></span>`;
+  }
+  html+=`</div>`;
   const completedCount=Object.keys(history).filter(isDayComplete).length;
-  html+=`</div><div class="hist-foot"><span>${completedCount} full session${completedCount===1?'':'s'} logged</span><button class="reset" id="resetBtn">Reset today</button></div></div>`;
+  html+=`<div class="hist-foot"><span>${completedCount} full session${completedCount===1?'':'s'} logged overall</span><button class="reset" id="resetBtn">Reset today</button></div></div>`;
 
   // Data / backup
   const cloudConfigured = !!(cloudUrl && cloudKey);
@@ -519,6 +546,9 @@ function bind(){
   const cSave=document.getElementById('cloudSave'); if(cSave) cSave.onclick=()=>cloudSave();
   const openSettingsLink=document.getElementById('openSettingsLink'); if(openSettingsLink) openSettingsLink.onclick=openSettings;
   document.getElementById('settingsBtn').onclick=openSettings;
+  const calPrev=document.getElementById('calPrev'), calNext=document.getElementById('calNext');
+  if(calPrev) calPrev.onclick=()=>{ calendarOffset--; render(); };
+  if(calNext) calNext.onclick=()=>{ if(calendarOffset<0){ calendarOffset++; render(); } };
 }
 
 function openSettings(){
@@ -550,20 +580,22 @@ function settingsMsg(text, kind){
 
 function markDone(id){ dayRecord(todayKey())[id]=true; saveHistory(); }
 
-function mergeFromText(text){
+function replaceHistoryFromText(text){
   // Accept either a full backup ({app,history}) or a bare history object.
   let parsed=JSON.parse(text);
   const incoming = parsed.history && typeof parsed.history==='object' ? parsed.history
                  : (typeof parsed==='object' && !parsed.app ? parsed : null);
   if(!incoming) throw new Error('format');
-  // Merge: a day counts as done if EITHER copy marked it done.
-  Object.keys(incoming).forEach(date=>{
-    const src=incoming[date]||{};
-    if(!history[date]) history[date]={};
-    Object.keys(src).forEach(k=>{ if(src[k]) history[date][k]=true; });
-  });
-  saveHistory(); render();
-  return Object.keys(incoming).length;
+  const n=Object.keys(incoming).length;
+  // Full replace, not merge: the cloud copy becomes local truth. This
+  // matters because auto-load runs once at page open, before any local
+  // changes that session — so there's nothing local yet worth preserving,
+  // and a stale local entry can never linger on top of fresher cloud data.
+  // Exception: if the cloud has no file yet (n===0, e.g. very first sync
+  // on the very first device), don't wipe out perfectly good local data —
+  // just leave it as-is so the next Save can populate the cloud instead.
+  if(n>0){ history = incoming; saveHistory(); render(); }
+  return n;
 }
 
 /* ---- Cloud sync via the GitHub Action relay (Cloudflare Worker) ---- */
@@ -602,9 +634,9 @@ async function cloudLoad(opts){
     const res=await fetch(cleanCloudUrl(cloudUrl)+'/load', { headers:{'X-Access-Key':cloudKey} });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text=await res.text();
-    const n=mergeFromText(text);
+    const n=replaceHistoryFromText(text);
     await markSynced();
-    if(!opts.silent){ msg(n ? `Restored. ${n} day(s) merged in.` : 'No cloud backup found yet — save one first.', n?'ok':'err'); render(); }
+    if(!opts.silent){ msg(n ? `Loaded ${n} day(s) from the cloud.` : 'No cloud backup found yet — save one first.', n?'ok':'err'); render(); }
     return true;
   }catch(e){
     if(!opts.silent) msg('Cloud load failed: '+(e.message||e), 'err');
