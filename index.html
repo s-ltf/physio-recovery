@@ -198,6 +198,8 @@
   .ctrl.sm{flex:0 0 auto;padding:14px 18px;font-size:13px;color:#B8C6C7;}
   .ctrl.minus{flex:0 0 auto;width:56px;font-size:24px;}
 
+  .task-note{font-size:17px;line-height:1.55;color:#D7E2E3;text-align:center;max-width:340px;margin:0;}
+
   .ready-msg{text-align:center;}
   .ready-msg .big-num{font-size:120px;}
 
@@ -254,30 +256,86 @@
 </div>
 
 <script>
-/* ============ Plan data (transcribed from the notes) ============ */
-const EXERCISES = [
+/* ============ Plan data (transcribed from the physio's notes) ============
+   EXERCISE_PROGRAMS is a small catalog: each entry is a set of exercises
+   prescribed at some point. Only one program is "active" (shown/tracked)
+   at a time — swapping to a newly prescribed set is just adding a new
+   entry here and repointing ACTIVE_PROGRAM_ID. Past programs are kept
+   around so their ids never collide with the active one and old history
+   stays meaningful. */
+const EXERCISE_PROGRAMS = [
   {
-    id:'1a', label:'1a',
-    name:'Seated Calf Raises',
-    type:'reps', reps:10, sets:3, restBetweenSets:45,
-    chips:['10 reps','3 sets'],
-    note:'Sit tall, push through the balls of the feet, lower with control.'
+    id:'ankle-calf-v1',
+    name:'Ankle & calf rehab',
+    exercises:[
+      {
+        id:'1a', label:'1a',
+        name:'Seated Calf Raises',
+        type:'reps', reps:10, sets:3, restBetweenSets:45,
+        chips:['10 reps','3 sets'],
+        note:'Sit tall, push through the balls of the feet, lower with control.'
+      },
+      {
+        id:'1b', label:'1b',
+        name:'Seated Calf Raises — Isometric Holds',
+        type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+        chips:['20s hold','20s rest','×5','hold at top'],
+        note:'Raise up, then hold at the top of the range for the full count.'
+      },
+      {
+        id:'2', label:'2',
+        name:'Long-Sitting Plantar Flexion (ball push)',
+        type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+        chips:['20s hold','20s rest','×5'],
+        note:'Legs out straight. Press the ball of the foot steadily into a ball.'
+      },
+    ]
   },
   {
-    id:'1b', label:'1b',
-    name:'Seated Calf Raises — Isometric Holds',
-    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
-    chips:['20s hold','20s rest','×5','hold at top'],
-    note:'Raise up, then hold at the top of the range for the full count.'
-  },
-  {
-    id:'2', label:'2',
-    name:'Long-Sitting Plantar Flexion (ball push)',
-    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
-    chips:['20s hold','20s rest','×5'],
-    note:'Legs out straight. Press the ball of the foot steadily into a ball.'
+    id:'gait-balance-v2',
+    name:'Gait, balance & calf strength',
+    exercises:[
+      {
+        id:'gb1', label:'1',
+        name:"'4-Point' Walking with Crutches",
+        type:'task',
+        chips:['Gait drill'],
+        note:'Crutch and foot move in opposites — advance one crutch, then step through with the opposite foot, alternating sides.'
+      },
+      {
+        id:'gb2', label:'2',
+        name:'Stepping Drill',
+        type:'task',
+        chips:['Heel off + toes off'],
+        note:'Roll fully through the foot with each step: heel lifts off first, then push off through the toes.'
+      },
+      {
+        id:'gb3', label:'3',
+        name:'Single Leg Balance',
+        type:'hold',
+        chips:['Hold as long as possible'],
+        note:'Balance on the injured leg. Hold as long as you can with good control, then stop.'
+      },
+      {
+        id:'gb4', label:'4',
+        name:'Standing Calf Raise',
+        type:'reps', reps:12, sets:3, restBetweenSets:45,
+        chips:['12 reps','3 sets'],
+        note:'Stand tall, rise onto the balls of both feet, lower with control.'
+      },
+      {
+        id:'gb5', label:'5',
+        name:'Seated Calf Raise — Weighted',
+        type:'reps', reps:12, sets:3, restBetweenSets:45,
+        chips:['12 reps','3 sets','25 lb on knee'],
+        note:'Place a 25 lb dumbbell across the knee. Press through the balls of the feet, lower slowly.'
+      },
+    ]
   },
 ];
+const ACTIVE_PROGRAM_ID = 'gait-balance-v2';
+const activeProgram = EXERCISE_PROGRAMS.find(p=>p.id===ACTIVE_PROGRAM_ID) || EXERCISE_PROGRAMS[0];
+const EXERCISES = activeProgram.exercises;
 const GUIDELINES = [
   {
     id:'wbat', icon:'🦶', name:'Weight-bearing (WBAT)',
@@ -417,7 +475,7 @@ function render(){
     <div class="brand">
       <div class="kicker">Recovery Plan</div>
       <h1>Sari</h1>
-      <div class="sub">Ankle &amp; calf rehab</div>
+      <div class="sub">${activeProgram.name}</div>
     </div>
     <div class="head-actions">
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
@@ -439,7 +497,7 @@ function render(){
 
   EXERCISES.forEach(ex=>{
     const done=!!rec[ex.id];
-    const chips=ex.chips.map((c,i)=>`<span class="chip${(ex.type==='iso'&&c.includes('hold'))?' hot':''}">${c}</span>`).join('');
+    const chips=ex.chips.map((c,i)=>`<span class="chip${((ex.type==='iso'||ex.type==='hold')&&c.toLowerCase().includes('hold'))?' hot':''}">${c}</span>`).join('');
     html+=`
     <div class="card ${done?'is-done':''}">
       <div class="num">${ex.label}</div>
@@ -450,7 +508,7 @@ function render(){
         <div class="act">
           ${done
             ? `<span class="done-tag">✓ Done</span><button class="redo" data-redo="${ex.id}">Repeat</button>`
-            : `<button class="btn primary" data-start="${ex.id}">${ex.type==='reps'?'Start set':'Start timer'}</button>`}
+            : `<button class="btn primary" data-start="${ex.id}">${ex.type==='reps'?'Start set':(ex.type==='hold'?'Start hold':(ex.type==='task'?'Start':'Start timer'))}</button>`}
         </div>
       </div>
     </div>`;
@@ -669,7 +727,10 @@ function openPlayer(id){
   const ex=EXERCISES.find(e=>e.id===id);
   ovName.textContent=ex.name;
   overlay.classList.add('open');
-  if(ex.type==='reps') startReps(ex); else startIso(ex);
+  if(ex.type==='reps') startReps(ex);
+  else if(ex.type==='hold') startHold(ex);
+  else if(ex.type==='task') startTask(ex);
+  else startIso(ex);
 }
 
 function completeScreen(ex,subtitle){
@@ -851,6 +912,57 @@ function startReps(ex){
   }
 
   drawCounter();
+  engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
+}
+
+/* ---- Technique drill engine (no numbers to count, just do it & confirm) ---- */
+function startTask(ex){
+  ovSub.textContent='Technique drill';
+  ovStage.innerHTML=`
+    <div class="phase" style="color:var(--teal)">Practice</div>
+    <p class="task-note">${ex.note}</p>
+    <div class="ov-controls">
+      <button class="ctrl go" id="taskDone" style="max-width:240px;">Mark done</button>
+      <button class="ctrl sm" id="stopBtn">Cancel</button>
+    </div>`;
+  document.getElementById('taskDone').onclick=()=>completeScreen(ex, 'Nice work.');
+  document.getElementById('stopBtn').onclick=()=>closePlayer();
+  engine={ stop(){} };
+}
+
+/* ---- Open-ended hold engine (stopwatch — "hold as long as possible") ---- */
+function startHold(ex){
+  let elapsed=0, raf=null, last=null, paused=false;
+  ovSub.textContent='Hold as long as you can, with control';
+  ovStage.innerHTML=`
+    <div class="phase" style="color:var(--hold)">Holding</div>
+    <div class="ring-wrap">
+      <div class="ring-center">
+        <div class="big-num" id="bigNum">0</div>
+        <div class="big-sub">seconds</div>
+      </div>
+    </div>
+    <div class="ov-controls">
+      <button class="ctrl sm" id="pauseBtn">Pause</button>
+      <button class="ctrl go" id="doneBtn">I'm done</button>
+    </div>`;
+  document.getElementById('doneBtn').onclick=()=>{
+    if(raf) cancelAnimationFrame(raf); raf=null;
+    completeScreen(ex, `Held for ${Math.floor(elapsed)}s.`);
+  };
+  document.getElementById('pauseBtn').onclick=()=>{
+    paused=!paused;
+    document.getElementById('pauseBtn').textContent=paused?'Resume':'Pause';
+    if(!paused) last=null;
+  };
+  function tick(ts){
+    if(paused){ raf=requestAnimationFrame(tick); return; }
+    if(last==null) last=ts;
+    elapsed+=(ts-last)/1000; last=ts;
+    const bn=document.getElementById('bigNum'); if(bn) bn.textContent=Math.floor(elapsed);
+    raf=requestAnimationFrame(tick);
+  }
+  raf=requestAnimationFrame(tick);
   engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
 }
 
