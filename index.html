@@ -161,6 +161,11 @@
   .sheet-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;}
   .field-label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;}
 
+  .program-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .program-item:last-child{border-bottom:none;}
+  .program-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .program-meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45;}
+
   .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .sync-info{display:flex;align-items:center;gap:9px;min-width:0;}
   .sync-dot{width:9px;height:9px;border-radius:99px;background:var(--faint);flex-shrink:0;}
@@ -197,6 +202,8 @@
   .ctrl.go{background:var(--teal);}
   .ctrl.sm{flex:0 0 auto;padding:14px 18px;font-size:13px;color:#B8C6C7;}
   .ctrl.minus{flex:0 0 auto;width:56px;font-size:24px;}
+
+  .task-note{font-size:17px;line-height:1.55;color:#D7E2E3;text-align:center;max-width:340px;margin:0;}
 
   .ready-msg{text-align:center;}
   .ready-msg .big-num{font-size:120px;}
@@ -240,6 +247,11 @@
   </div>
   <div class="sheet-body">
     <div class="sheet-section">
+      <div class="sheet-label">Exercise Library</div>
+      <p class="data-note">Pick which prescribed set is active. That's what loads here — and on any synced device — until you switch it again.</p>
+      <div id="programList"></div>
+    </div>
+    <div class="sheet-section">
       <div class="sheet-label">Cloud sync</div>
       <p class="data-note">Connects this device to the GitHub Action relay so your log can move between phone and laptop.</p>
       <label class="field-label" for="cloudUrlInput">Worker URL</label>
@@ -254,30 +266,96 @@
 </div>
 
 <script>
-/* ============ Plan data (transcribed from the notes) ============ */
-const EXERCISES = [
+/* ============ Plan data (transcribed from the physio's notes) ============
+   EXERCISE_PROGRAMS is a small catalog: each entry is a set of exercises
+   prescribed at some point. Only one program is "active" (shown/tracked)
+   at a time — swapping to a newly prescribed set is just adding a new
+   entry here and repointing ACTIVE_PROGRAM_ID. Past programs are kept
+   around so their ids never collide with the active one and old history
+   stays meaningful. */
+const EXERCISE_PROGRAMS = [
   {
-    id:'1a', label:'1a',
-    name:'Seated Calf Raises',
-    type:'reps', reps:10, sets:3, restBetweenSets:45,
-    chips:['10 reps','3 sets'],
-    note:'Sit tall, push through the balls of the feet, lower with control.'
+    id:'ankle-calf-v1',
+    name:'Ankle & calf rehab',
+    exercises:[
+      {
+        id:'1a', label:'1a',
+        name:'Seated Calf Raises',
+        type:'reps', reps:10, sets:3, restBetweenSets:45,
+        chips:['10 reps','3 sets'],
+        note:'Sit tall, push through the balls of the feet, lower with control.'
+      },
+      {
+        id:'1b', label:'1b',
+        name:'Seated Calf Raises — Isometric Holds',
+        type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+        chips:['20s hold','20s rest','×5','hold at top'],
+        note:'Raise up, then hold at the top of the range for the full count.'
+      },
+      {
+        id:'2', label:'2',
+        name:'Long-Sitting Plantar Flexion (ball push)',
+        type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
+        chips:['20s hold','20s rest','×5'],
+        note:'Legs out straight. Press the ball of the foot steadily into a ball.'
+      },
+    ]
   },
   {
-    id:'1b', label:'1b',
-    name:'Seated Calf Raises — Isometric Holds',
-    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
-    chips:['20s hold','20s rest','×5','hold at top'],
-    note:'Raise up, then hold at the top of the range for the full count.'
-  },
-  {
-    id:'2', label:'2',
-    name:'Long-Sitting Plantar Flexion (ball push)',
-    type:'iso', hold:20, rest:20, rounds:5, leadIn:5,
-    chips:['20s hold','20s rest','×5'],
-    note:'Legs out straight. Press the ball of the foot steadily into a ball.'
+    id:'gait-balance-v2',
+    name:'Gait, balance & calf strength',
+    exercises:[
+      {
+        id:'gb1', label:'1',
+        name:"'4-Point' Walking with Crutches",
+        type:'task',
+        chips:['Gait drill'],
+        note:'Crutch and foot move in opposites — advance one crutch, then step through with the opposite foot, alternating sides.'
+      },
+      {
+        id:'gb2', label:'2',
+        name:'Stepping Drill',
+        type:'task',
+        chips:['Heel off + toes off'],
+        note:'Roll fully through the foot with each step: heel lifts off first, then push off through the toes.'
+      },
+      {
+        id:'gb3', label:'3',
+        name:'Single Leg Balance',
+        type:'hold',
+        chips:['Hold as long as possible'],
+        note:'Balance on the injured leg. Hold as long as you can with good control, then stop.'
+      },
+      {
+        id:'gb4', label:'4',
+        name:'Standing Calf Raise',
+        type:'reps', reps:12, sets:3, restBetweenSets:45,
+        chips:['12 reps','3 sets'],
+        note:'Stand tall, rise onto the balls of both feet, lower with control.'
+      },
+      {
+        id:'gb5', label:'5',
+        name:'Seated Calf Raise — Weighted',
+        type:'reps', reps:12, sets:3, restBetweenSets:45,
+        chips:['12 reps','3 sets','25 lb on knee'],
+        note:'Place a 25 lb dumbbell across the knee. Press through the balls of the feet, lower slowly.'
+      },
+    ]
   },
 ];
+const DEFAULT_ACTIVE_PROGRAM_ID = 'gait-balance-v2';
+// Mutable: the active program can be switched at runtime from the
+// Exercise Library in Settings, persisted locally, and pushed to the
+// cloud so it follows the patient across devices too.
+let activeProgramId = DEFAULT_ACTIVE_PROGRAM_ID;
+let activeProgram, EXERCISES, EX_IDS;
+function applyActiveProgram(){
+  activeProgram = EXERCISE_PROGRAMS.find(p=>p.id===activeProgramId) || EXERCISE_PROGRAMS[EXERCISE_PROGRAMS.length-1];
+  activeProgramId = activeProgram.id;
+  EXERCISES = activeProgram.exercises;
+  EX_IDS = EXERCISES.map(e=>e.id);
+}
+applyActiveProgram();
 const GUIDELINES = [
   {
     id:'wbat', icon:'🦶', name:'Weight-bearing (WBAT)',
@@ -291,7 +369,6 @@ const GUIDELINES = [
     id:'stairs', icon:'🪜', name:'Stairs', cue:true, info:true
   }
 ];
-const EX_IDS = EXERCISES.map(e=>e.id);
 
 /* ============ Storage ============ */
 const HKEY='sari-rehab-history-v1';
@@ -299,6 +376,7 @@ const SKEY='sari-rehab-sound-v1';
 const CKEY='sari-rehab-cloud-url-v1';
 const AKEY='sari-rehab-cloud-key-v1';
 const LKEY='sari-rehab-last-sync-v1';
+const PKEY='sari-rehab-active-program-v1';
 let history = {};
 let soundOn = true;
 // Hardcoded default Worker URL — safe to bake in, since the matching
@@ -333,6 +411,8 @@ async function loadAll(){
   try{ const c=await store.get(CKEY); if(c&&c.value) cloudUrl = c.value; }catch(e){}
   try{ const k=await store.get(AKEY); if(k&&k.value) cloudKey = k.value; }catch(e){}
   try{ const l=await store.get(LKEY); if(l&&l.value) lastSync = Number(l.value)||0; }catch(e){}
+  try{ const p=await store.get(PKEY); if(p&&p.value && EXERCISE_PROGRAMS.some(pr=>pr.id===p.value)) activeProgramId=p.value; }catch(e){}
+  applyActiveProgram();
 }
 let saveTimer=null;
 function saveHistory(){
@@ -345,6 +425,7 @@ function saveHistory(){
 async function saveSound(){ try{ await store.set(SKEY, String(soundOn)); }catch(e){} }
 async function saveCloudUrl(){ try{ await store.set(CKEY, cloudUrl); }catch(e){} }
 async function saveCloudKey(){ try{ await store.set(AKEY, cloudKey); }catch(e){} }
+async function saveActiveProgram(){ try{ await store.set(PKEY, activeProgramId); }catch(e){} }
 async function markSynced(){ lastSync=Date.now(); try{ await store.set(LKEY, String(lastSync)); }catch(e){} }
 function lastSyncLabel(){
   if(!lastSync) return 'Not synced yet';
@@ -417,7 +498,7 @@ function render(){
     <div class="brand">
       <div class="kicker">Recovery Plan</div>
       <h1>Sari</h1>
-      <div class="sub">Ankle &amp; calf rehab</div>
+      <div class="sub">${activeProgram.name}</div>
     </div>
     <div class="head-actions">
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
@@ -439,7 +520,7 @@ function render(){
 
   EXERCISES.forEach(ex=>{
     const done=!!rec[ex.id];
-    const chips=ex.chips.map((c,i)=>`<span class="chip${(ex.type==='iso'&&c.includes('hold'))?' hot':''}">${c}</span>`).join('');
+    const chips=ex.chips.map((c,i)=>`<span class="chip${((ex.type==='iso'||ex.type==='hold')&&c.toLowerCase().includes('hold'))?' hot':''}">${c}</span>`).join('');
     html+=`
     <div class="card ${done?'is-done':''}">
       <div class="num">${ex.label}</div>
@@ -450,7 +531,7 @@ function render(){
         <div class="act">
           ${done
             ? `<span class="done-tag">✓ Done</span><button class="redo" data-redo="${ex.id}">Repeat</button>`
-            : `<button class="btn primary" data-start="${ex.id}">${ex.type==='reps'?'Start set':'Start timer'}</button>`}
+            : `<button class="btn primary" data-start="${ex.id}">${ex.type==='reps'?'Start set':(ex.type==='hold'?'Start hold':(ex.type==='task'?'Start':'Start timer'))}</button>`}
         </div>
       </div>
     </div>`;
@@ -551,10 +632,40 @@ function bind(){
   if(calNext) calNext.onclick=()=>{ if(calendarOffset<0){ calendarOffset++; render(); } };
 }
 
+function renderProgramList(){
+  const el=document.getElementById('programList'); if(!el) return;
+  el.innerHTML = EXERCISE_PROGRAMS.map(p=>{
+    const active = p.id===activeProgramId;
+    return `
+    <div class="program-item">
+      <div class="program-info">
+        <div class="program-name">${p.name}${active?' <span class="tip-tag">Active</span>':''}</div>
+        <div class="program-meta">${p.exercises.map(e=>e.name).join(' · ')}</div>
+      </div>
+      ${active ? '' : `<button class="data-btn" data-set-program="${p.id}" style="flex:0 0 auto;min-width:0;">Set active</button>`}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-set-program]').forEach(b=>b.onclick=()=>setActiveProgram(b.dataset.setProgram));
+}
+
+function setActiveProgram(id){
+  if(id===activeProgramId || !EXERCISE_PROGRAMS.some(p=>p.id===id)) return;
+  activeProgramId=id;
+  applyActiveProgram();
+  saveActiveProgram();
+  render();
+  renderProgramList();
+  settingsMsg(`Switched to "${activeProgram.name}." Today's list now shows this set.`, 'ok');
+  // Push the new choice up too, so it follows the patient to their other
+  // synced device rather than only taking effect on this one.
+  if(cloudUrl && cloudKey) cloudSave({ silent:true });
+}
+
 function openSettings(){
   const urlInput=document.getElementById('cloudUrlInput'), keyInput=document.getElementById('cloudKeyInput');
   if(urlInput) urlInput.value=cloudUrl||'';
   if(keyInput) keyInput.value=cloudKey||'';
+  renderProgramList();
   document.getElementById('settingsBackdrop').classList.add('open');
   document.getElementById('settingsSheet').classList.add('open');
 }
@@ -587,6 +698,7 @@ function replaceHistoryFromText(text){
                  : (typeof parsed==='object' && !parsed.app ? parsed : null);
   if(!incoming) throw new Error('format');
   const n=Object.keys(incoming).length;
+  let changed=false;
   // Full replace, not merge: the cloud copy becomes local truth. This
   // matters because auto-load runs once at page open, before any local
   // changes that session — so there's nothing local yet worth preserving,
@@ -594,7 +706,11 @@ function replaceHistoryFromText(text){
   // Exception: if the cloud has no file yet (n===0, e.g. very first sync
   // on the very first device), don't wipe out perfectly good local data —
   // just leave it as-is so the next Save can populate the cloud instead.
-  if(n>0){ history = incoming; saveHistory(); render(); }
+  if(n>0){ history = incoming; saveHistory(); changed=true; }
+  if(parsed.activeProgramId && parsed.activeProgramId!==activeProgramId && EXERCISE_PROGRAMS.some(p=>p.id===parsed.activeProgramId)){
+    activeProgramId=parsed.activeProgramId; applyActiveProgram(); saveActiveProgram(); changed=true;
+  }
+  if(changed) render();
   return n;
 }
 
@@ -611,7 +727,7 @@ async function cloudSave(opts){
   const btn=document.getElementById('cloudSave'); if(btn&&!opts.silent) btn.disabled=true;
   if(!opts.silent) cloudMsg('Sending to the cloud…');
   try{
-    const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history };
+    const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history, activeProgramId };
     const res=await fetch(cleanCloudUrl(cloudUrl)+'/save', {
       method:'POST', headers:{'Content-Type':'application/json','X-Access-Key':cloudKey}, body:JSON.stringify(payload)
     });
@@ -669,7 +785,10 @@ function openPlayer(id){
   const ex=EXERCISES.find(e=>e.id===id);
   ovName.textContent=ex.name;
   overlay.classList.add('open');
-  if(ex.type==='reps') startReps(ex); else startIso(ex);
+  if(ex.type==='reps') startReps(ex);
+  else if(ex.type==='hold') startHold(ex);
+  else if(ex.type==='task') startTask(ex);
+  else startIso(ex);
 }
 
 function completeScreen(ex,subtitle){
@@ -851,6 +970,57 @@ function startReps(ex){
   }
 
   drawCounter();
+  engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
+}
+
+/* ---- Technique drill engine (no numbers to count, just do it & confirm) ---- */
+function startTask(ex){
+  ovSub.textContent='Technique drill';
+  ovStage.innerHTML=`
+    <div class="phase" style="color:var(--teal)">Practice</div>
+    <p class="task-note">${ex.note}</p>
+    <div class="ov-controls">
+      <button class="ctrl go" id="taskDone" style="max-width:240px;">Mark done</button>
+      <button class="ctrl sm" id="stopBtn">Cancel</button>
+    </div>`;
+  document.getElementById('taskDone').onclick=()=>completeScreen(ex, 'Nice work.');
+  document.getElementById('stopBtn').onclick=()=>closePlayer();
+  engine={ stop(){} };
+}
+
+/* ---- Open-ended hold engine (stopwatch — "hold as long as possible") ---- */
+function startHold(ex){
+  let elapsed=0, raf=null, last=null, paused=false;
+  ovSub.textContent='Hold as long as you can, with control';
+  ovStage.innerHTML=`
+    <div class="phase" style="color:var(--hold)">Holding</div>
+    <div class="ring-wrap">
+      <div class="ring-center">
+        <div class="big-num" id="bigNum">0</div>
+        <div class="big-sub">seconds</div>
+      </div>
+    </div>
+    <div class="ov-controls">
+      <button class="ctrl sm" id="pauseBtn">Pause</button>
+      <button class="ctrl go" id="doneBtn">I'm done</button>
+    </div>`;
+  document.getElementById('doneBtn').onclick=()=>{
+    if(raf) cancelAnimationFrame(raf); raf=null;
+    completeScreen(ex, `Held for ${Math.floor(elapsed)}s.`);
+  };
+  document.getElementById('pauseBtn').onclick=()=>{
+    paused=!paused;
+    document.getElementById('pauseBtn').textContent=paused?'Resume':'Pause';
+    if(!paused) last=null;
+  };
+  function tick(ts){
+    if(paused){ raf=requestAnimationFrame(tick); return; }
+    if(last==null) last=ts;
+    elapsed+=(ts-last)/1000; last=ts;
+    const bn=document.getElementById('bigNum'); if(bn) bn.textContent=Math.floor(elapsed);
+    raf=requestAnimationFrame(tick);
+  }
+  raf=requestAnimationFrame(tick);
   engine={ stop(){ if(raf) cancelAnimationFrame(raf); raf=null; } };
 }
 
