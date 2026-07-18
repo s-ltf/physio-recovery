@@ -101,9 +101,6 @@
   .cue-explain{font-size:12.5px;color:var(--muted);margin-top:9px;}
   .guide.info{background:#F6F8F8;border-style:dashed;}
   .tip-tag{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--faint);background:#E7ECEB;border-radius:6px;padding:3px 7px;vertical-align:middle;margin-left:2px;}
-  .check{appearance:none;-webkit-appearance:none;width:26px;height:26px;border:2px solid var(--line);border-radius:8px;cursor:pointer;flex-shrink:0;position:relative;background:#fff;}
-  .check:checked{background:var(--done);border-color:var(--done);}
-  .check:checked::after{content:"✓";color:#fff;font-size:16px;font-weight:800;position:absolute;inset:0;display:grid;place-items:center;}
 
   /* ---------- History / Calendar ---------- */
   .history{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);}
@@ -306,35 +303,28 @@ const EXERCISE_PROGRAMS = [
     name:'Gait, balance & calf strength',
     exercises:[
       {
-        id:'gb1', label:'1',
-        name:"'4-Point' Walking with Crutches",
-        type:'task',
-        chips:['Gait drill'],
-        note:'Crutch and foot move in opposites — advance one crutch, then step through with the opposite foot, alternating sides.'
-      },
-      {
-        id:'gb2', label:'2',
+        id:'gb2', label:'1',
         name:'Stepping Drill',
         type:'task',
         chips:['Heel off + toes off'],
         note:'Roll fully through the foot with each step: heel lifts off first, then push off through the toes.'
       },
       {
-        id:'gb3', label:'3',
+        id:'gb3', label:'2',
         name:'Single Leg Balance',
         type:'hold',
         chips:['Hold as long as possible'],
         note:'Balance on the injured leg. Hold as long as you can with good control, then stop.'
       },
       {
-        id:'gb4', label:'4',
+        id:'gb4', label:'3',
         name:'Standing Calf Raise',
         type:'reps', reps:12, sets:3, restBetweenSets:45,
         chips:['12 reps','3 sets'],
         note:'Stand tall, rise onto the balls of both feet, lower with control.'
       },
       {
-        id:'gb5', label:'5',
+        id:'gb5', label:'4',
         name:'Seated Calf Raise — Weighted',
         type:'reps', reps:12, sets:3, restBetweenSets:45,
         chips:['12 reps','3 sets','25 lb on knee'],
@@ -358,15 +348,15 @@ function applyActiveProgram(){
 applyActiveProgram();
 const GUIDELINES = [
   {
-    id:'wbat', icon:'🦶', name:'Weight-bearing (WBAT)',
+    id:'four-point-gait', icon:'🩼', name:"'4-Point' Walking with Crutches",
     items:[
-      'Use both crutches.',
-      'Begin at about 10% weight and increase gradually from there.',
-      'Wean off the boot inside the house.'
+      'Crutch and foot move in opposites — not together.',
+      'Advance one crutch, then step through with the opposite foot.',
+      'Alternate sides with each step.'
     ]
   },
   {
-    id:'stairs', icon:'🪜', name:'Stairs', cue:true, info:true
+    id:'stairs', icon:'🪜', name:'Stairs', cue:true
   }
 ];
 
@@ -539,12 +529,10 @@ function render(){
 
   html+=`<div class="sec-label">Daily guidelines</div>`;
   GUIDELINES.forEach(g=>{
-    const checked=!!rec[g.id];
     html+=`
-    <div class="guide${g.info?' info':''}">
+    <div class="guide info">
       <div class="guide-head">
-        <h3><span class="gicon">${g.icon}</span>${g.name}${g.info?` <span class="tip-tag">reminder</span>`:''}</h3>
-        ${g.info?'':`<input type="checkbox" class="check" data-guide="${g.id}" ${checked?'checked':''} aria-label="Mark ${g.name} practiced today">`}
+        <h3><span class="gicon">${g.icon}</span>${g.name} <span class="tip-tag">reminder</span></h3>
       </div>`;
     if(g.cue){
       html+=`<div class="cue">Good foot up to <span class="up">heaven</span>,<br>bad foot down to <span class="down">hell</span>.</div>
@@ -612,9 +600,6 @@ function render(){
 function bind(){
   document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>{ ensureAudio(); openPlayer(b.dataset.start); });
   document.querySelectorAll('[data-redo]').forEach(b=>b.onclick=()=>{ ensureAudio(); openPlayer(b.dataset.redo); });
-  document.querySelectorAll('[data-guide]').forEach(c=>c.onchange=()=>{
-    dayRecord(todayKey())[c.dataset.guide]=c.checked; saveHistory(); render();
-  });
   document.getElementById('soundBtn').onclick=()=>{ soundOn=!soundOn; ensureAudio(); saveSound(); render(); };
   document.getElementById('resetBtn').onclick=()=>{
     if(confirm("Clear today's progress?")){
