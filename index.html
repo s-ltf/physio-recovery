@@ -161,6 +161,11 @@
   .sheet-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;}
   .field-label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;}
 
+  .program-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .program-item:last-child{border-bottom:none;}
+  .program-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .program-meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45;}
+
   .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .sync-info{display:flex;align-items:center;gap:9px;min-width:0;}
   .sync-dot{width:9px;height:9px;border-radius:99px;background:var(--faint);flex-shrink:0;}
@@ -241,6 +246,11 @@
     <button class="x dark" id="settingsClose" aria-label="Close">✕</button>
   </div>
   <div class="sheet-body">
+    <div class="sheet-section">
+      <div class="sheet-label">Exercise Library</div>
+      <p class="data-note">Pick which prescribed set is active. That's what loads here — and on any synced device — until you switch it again.</p>
+      <div id="programList"></div>
+    </div>
     <div class="sheet-section">
       <div class="sheet-label">Cloud sync</div>
       <p class="data-note">Connects this device to the GitHub Action relay so your log can move between phone and laptop.</p>
@@ -333,9 +343,19 @@ const EXERCISE_PROGRAMS = [
     ]
   },
 ];
-const ACTIVE_PROGRAM_ID = 'gait-balance-v2';
-const activeProgram = EXERCISE_PROGRAMS.find(p=>p.id===ACTIVE_PROGRAM_ID) || EXERCISE_PROGRAMS[0];
-const EXERCISES = activeProgram.exercises;
+const DEFAULT_ACTIVE_PROGRAM_ID = 'gait-balance-v2';
+// Mutable: the active program can be switched at runtime from the
+// Exercise Library in Settings, persisted locally, and pushed to the
+// cloud so it follows the patient across devices too.
+let activeProgramId = DEFAULT_ACTIVE_PROGRAM_ID;
+let activeProgram, EXERCISES, EX_IDS;
+function applyActiveProgram(){
+  activeProgram = EXERCISE_PROGRAMS.find(p=>p.id===activeProgramId) || EXERCISE_PROGRAMS[EXERCISE_PROGRAMS.length-1];
+  activeProgramId = activeProgram.id;
+  EXERCISES = activeProgram.exercises;
+  EX_IDS = EXERCISES.map(e=>e.id);
+}
+applyActiveProgram();
 const GUIDELINES = [
   {
     id:'wbat', icon:'🦶', name:'Weight-bearing (WBAT)',
@@ -349,7 +369,6 @@ const GUIDELINES = [
     id:'stairs', icon:'🪜', name:'Stairs', cue:true, info:true
   }
 ];
-const EX_IDS = EXERCISES.map(e=>e.id);
 
 /* ============ Storage ============ */
 const HKEY='sari-rehab-history-v1';
@@ -357,6 +376,7 @@ const SKEY='sari-rehab-sound-v1';
 const CKEY='sari-rehab-cloud-url-v1';
 const AKEY='sari-rehab-cloud-key-v1';
 const LKEY='sari-rehab-last-sync-v1';
+const PKEY='sari-rehab-active-program-v1';
 let history = {};
 let soundOn = true;
 // Hardcoded default Worker URL — safe to bake in, since the matching
@@ -391,6 +411,8 @@ async function loadAll(){
   try{ const c=await store.get(CKEY); if(c&&c.value) cloudUrl = c.value; }catch(e){}
   try{ const k=await store.get(AKEY); if(k&&k.value) cloudKey = k.value; }catch(e){}
   try{ const l=await store.get(LKEY); if(l&&l.value) lastSync = Number(l.value)||0; }catch(e){}
+  try{ const p=await store.get(PKEY); if(p&&p.value && EXERCISE_PROGRAMS.some(pr=>pr.id===p.value)) activeProgramId=p.value; }catch(e){}
+  applyActiveProgram();
 }
 let saveTimer=null;
 function saveHistory(){
@@ -403,6 +425,7 @@ function saveHistory(){
 async function saveSound(){ try{ await store.set(SKEY, String(soundOn)); }catch(e){} }
 async function saveCloudUrl(){ try{ await store.set(CKEY, cloudUrl); }catch(e){} }
 async function saveCloudKey(){ try{ await store.set(AKEY, cloudKey); }catch(e){} }
+async function saveActiveProgram(){ try{ await store.set(PKEY, activeProgramId); }catch(e){} }
 async function markSynced(){ lastSync=Date.now(); try{ await store.set(LKEY, String(lastSync)); }catch(e){} }
 function lastSyncLabel(){
   if(!lastSync) return 'Not synced yet';
@@ -609,10 +632,40 @@ function bind(){
   if(calNext) calNext.onclick=()=>{ if(calendarOffset<0){ calendarOffset++; render(); } };
 }
 
+function renderProgramList(){
+  const el=document.getElementById('programList'); if(!el) return;
+  el.innerHTML = EXERCISE_PROGRAMS.map(p=>{
+    const active = p.id===activeProgramId;
+    return `
+    <div class="program-item">
+      <div class="program-info">
+        <div class="program-name">${p.name}${active?' <span class="tip-tag">Active</span>':''}</div>
+        <div class="program-meta">${p.exercises.map(e=>e.name).join(' · ')}</div>
+      </div>
+      ${active ? '' : `<button class="data-btn" data-set-program="${p.id}" style="flex:0 0 auto;min-width:0;">Set active</button>`}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-set-program]').forEach(b=>b.onclick=()=>setActiveProgram(b.dataset.setProgram));
+}
+
+function setActiveProgram(id){
+  if(id===activeProgramId || !EXERCISE_PROGRAMS.some(p=>p.id===id)) return;
+  activeProgramId=id;
+  applyActiveProgram();
+  saveActiveProgram();
+  render();
+  renderProgramList();
+  settingsMsg(`Switched to "${activeProgram.name}." Today's list now shows this set.`, 'ok');
+  // Push the new choice up too, so it follows the patient to their other
+  // synced device rather than only taking effect on this one.
+  if(cloudUrl && cloudKey) cloudSave({ silent:true });
+}
+
 function openSettings(){
   const urlInput=document.getElementById('cloudUrlInput'), keyInput=document.getElementById('cloudKeyInput');
   if(urlInput) urlInput.value=cloudUrl||'';
   if(keyInput) keyInput.value=cloudKey||'';
+  renderProgramList();
   document.getElementById('settingsBackdrop').classList.add('open');
   document.getElementById('settingsSheet').classList.add('open');
 }
@@ -645,6 +698,7 @@ function replaceHistoryFromText(text){
                  : (typeof parsed==='object' && !parsed.app ? parsed : null);
   if(!incoming) throw new Error('format');
   const n=Object.keys(incoming).length;
+  let changed=false;
   // Full replace, not merge: the cloud copy becomes local truth. This
   // matters because auto-load runs once at page open, before any local
   // changes that session — so there's nothing local yet worth preserving,
@@ -652,7 +706,11 @@ function replaceHistoryFromText(text){
   // Exception: if the cloud has no file yet (n===0, e.g. very first sync
   // on the very first device), don't wipe out perfectly good local data —
   // just leave it as-is so the next Save can populate the cloud instead.
-  if(n>0){ history = incoming; saveHistory(); render(); }
+  if(n>0){ history = incoming; saveHistory(); changed=true; }
+  if(parsed.activeProgramId && parsed.activeProgramId!==activeProgramId && EXERCISE_PROGRAMS.some(p=>p.id===parsed.activeProgramId)){
+    activeProgramId=parsed.activeProgramId; applyActiveProgram(); saveActiveProgram(); changed=true;
+  }
+  if(changed) render();
   return n;
 }
 
@@ -669,7 +727,7 @@ async function cloudSave(opts){
   const btn=document.getElementById('cloudSave'); if(btn&&!opts.silent) btn.disabled=true;
   if(!opts.silent) cloudMsg('Sending to the cloud…');
   try{
-    const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history };
+    const payload={ app:'sari-recovery', version:1, exportedAt:new Date().toISOString(), history, activeProgramId };
     const res=await fetch(cleanCloudUrl(cloudUrl)+'/save', {
       method:'POST', headers:{'Content-Type':'application/json','X-Access-Key':cloudKey}, body:JSON.stringify(payload)
     });
