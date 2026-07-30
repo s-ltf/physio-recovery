@@ -1,63 +1,17 @@
 {
+  "activeProgramId": "gait-balance-v2",
   "app": "sari-recovery",
-  "exportedAt": "2026-07-16T01:47:28.894Z",
+  "exportedAt": "2026-07-30T03:25:01.995Z",
   "history": {
-    "2026-06-23": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
+    "2026-07-22": {
+      "gb2": true,
+      "gb3": true,
+      "gb4": true
     },
-    "2026-06-24": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-06-25": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-06-26": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-06-27": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-06-28": {
-      "1a": true,
-      "1b": true,
-      "2": true
-    },
-    "2026-07-03": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-07-13": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
-    },
-    "2026-07-14": {
-      "1a": true,
-      "1b": true
-    },
-    "2026-07-15": {
-      "1a": true,
-      "1b": true,
-      "2": true,
-      "wbat": true
+    "2026-07-29": {
+      "gb3": true,
+      "gb4": true,
+      "gb5": true
     }
   },
   "version": 1
